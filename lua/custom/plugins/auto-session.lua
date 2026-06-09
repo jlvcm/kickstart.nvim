@@ -1,6 +1,9 @@
 vim.pack.add { 'https://github.com/rmagatti/auto-session' }
+
+vim.o.sessionoptions = 'blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions'
+
 require('auto-session').setup {
-  auto_restore_enabled = false,
-  auto_save_enabled = true,
-  auto_session_suppress_dirs = { '~/', '/' },
+  auto_restore    = false,
+  auto_save       = true,
+  suppressed_dirs = { '~/', '/' },
 }

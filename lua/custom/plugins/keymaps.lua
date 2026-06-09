@@ -38,6 +38,7 @@ vim.api.nvim_create_autocmd('VimEnter', {
         local ok = pcall(require('auto-session').RestoreSession)
         if not ok then vim.notify('No session found for this directory', vim.log.levels.WARN) end
       end, { buffer = true, desc = 'Restore session' })
+      vim.keymap.set('n', 'q', '<cmd>qa<cr>', { buffer = true, desc = 'Quit' })
     end
   end,
 })
