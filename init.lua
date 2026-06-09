@@ -99,7 +99,7 @@ do
   vim.g.maplocalleader = ' '
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
-  vim.g.have_nerd_font = false
+  vim.g.have_nerd_font = true
 
   -- [[ Setting options ]]
   --  See `:help vim.o`
@@ -430,14 +430,73 @@ do
   --  You could remove this setup call if you don't like it,
   --  and try some other statusline plugin
   local statusline = require 'mini.statusline'
-  -- Set `use_icons` to true if you have a Nerd Font
-  statusline.setup { use_icons = vim.g.have_nerd_font }
 
-  -- You can configure sections in the statusline by overriding their
-  -- default behavior. For example, here we set the section for
-  -- cursor location to LINE:COLUMN
+  local function set_unsaved_hl()
+    vim.api.nvim_set_hl(0, 'StatuslineUnsaved', { fg = '#ffffff', bg = '#cc3333', bold = true })
+  end
+  set_unsaved_hl()
+  vim.api.nvim_create_autocmd('ColorScheme', { callback = set_unsaved_hl })
+
+  local function unsaved_count()
+    local n = 0
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].modified then n = n + 1 end
+    end
+    return n
+  end
+  local pencil = vim.fn.nr2char(0xf040)
+
+  statusline.setup {
+    use_icons = vim.g.have_nerd_font,
+    content = {
+      active = function()
+        local mode, mode_hl = statusline.section_mode { trunc_width = 120 }
+        local git           = statusline.section_git { trunc_width = 75 }
+        local diff          = statusline.section_diff { trunc_width = 75 }
+        local diagnostics   = statusline.section_diagnostics { trunc_width = 75 }
+        local lsp           = statusline.section_lsp { trunc_width = 75 }
+        local filename      = statusline.section_filename { trunc_width = 140 }
+        local fileinfo      = statusline.section_fileinfo { trunc_width = 120 }
+        local location      = statusline.section_location { trunc_width = 75 }
+        local search        = statusline.section_searchcount { trunc_width = 75 }
+
+        local n = unsaved_count()
+        local badge = n > 0 and (pencil .. ' ' .. n) or ''
+
+        return statusline.combine_groups {
+          { hl = 'StatuslineUnsaved',      strings = { badge } },
+          { hl = mode_hl,                  strings = { mode } },
+          { hl = 'MiniStatuslineDevinfo',  strings = { git, diff, diagnostics, lsp } },
+          '%<',
+          { hl = 'MiniStatuslineFilename', strings = { filename } },
+          '%=',
+          { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
+          { hl = mode_hl,                  strings = { search, location } },
+          { hl = 'StatuslineUnsaved',      strings = { badge } },
+        }
+      end,
+    },
+  }
+
   ---@diagnostic disable-next-line: duplicate-set-field
-  statusline.section_location = function() return '%2l:%-2v' end
+  statusline.section_fileinfo = function()
+    local filetype = vim.bo.filetype
+    if filetype == '' then return '' end
+    local ok, icons = pcall(require, 'mini.icons')
+    if ok then
+      local icon = icons.get('filetype', filetype)
+      return icon .. ' ' .. filetype
+    end
+    return filetype
+  end
+
+  ---@diagnostic disable-next-line: duplicate-set-field
+  statusline.section_location = function()
+    local fmt = ''
+    if vim.g.disable_autoformat then fmt = fmt .. 'G󰒆 ' end
+    if vim.b.disable_autoformat then fmt = fmt .. 'B󰒆 ' end
+    return fmt .. '%p%% %2l:%-2v'
+  end
 
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
@@ -696,6 +755,7 @@ do
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     -- ts_ls = {},
+    vtsls = {},
 
     stylua = {}, -- Used to format Lua code
 
@@ -772,30 +832,19 @@ do
   -- [[ Formatting ]]
   vim.pack.add { gh 'stevearc/conform.nvim' }
   require('conform').setup {
-    notify_on_error = false,
+    notify_on_error = true,
     format_on_save = function(bufnr)
-      -- You can specify filetypes to autoformat on save here:
-      local enabled_filetypes = {
-        -- lua = true,
-        -- python = true,
-      }
-      if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
-      else
-        return nil
-      end
+      if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then return end
+      return { timeout_ms = 2000 }
     end,
     default_format_opts = {
-      lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
+      lsp_format = 'fallback',
     },
-    -- You can also specify external formatters in here.
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      javascript = { 'eslint_d' },
+      typescript = { 'eslint_d' },
+      javascriptreact = { 'eslint_d' },
+      typescriptreact = { 'eslint_d' },
     },
   }
 
@@ -962,15 +1011,15 @@ do
   --
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
-  -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
-  -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
+  require 'kickstart.plugins.lint'
+  require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- require 'custom.plugins'
+  require 'custom.plugins'
 end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
