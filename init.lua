@@ -190,6 +190,14 @@ do
   vim.diagnostic.config {
     update_in_insert = false,
     severity_sort = true,
+    signs = {
+      text = {
+        [vim.diagnostic.severity.ERROR] = ' ',
+        [vim.diagnostic.severity.WARN] = ' ',
+        [vim.diagnostic.severity.HINT] = ' ',
+        [vim.diagnostic.severity.INFO] = ' ',
+      },
+    },
     float = { border = 'rounded', source = 'if_many' },
     underline = { severity = { min = vim.diagnostic.severity.WARN } },
 
@@ -344,20 +352,9 @@ do
   vim.pack.add { gh 'NMAC427/guess-indent.nvim' }
   require('guess-indent').setup {}
 
-  -- Here is a more advanced configuration example that passes options to `gitsigns.nvim`
-  --
-  -- See `:help gitsigns` to understand what each configuration key does.
-  -- Adds git related signs to the gutter, as well as utilities for managing changes
+  -- Adds git related signs to the gutter, as well as utilities for managing changes.
+  -- Full setup (signs + keymaps) is in kickstart/plugins/gitsigns.lua.
   vim.pack.add { gh 'lewis6991/gitsigns.nvim' }
-  require('gitsigns').setup {
-    signs = {
-      add = { text = '+' }, ---@diagnostic disable-line: missing-fields
-      change = { text = '~' }, ---@diagnostic disable-line: missing-fields
-      delete = { text = '_' }, ---@diagnostic disable-line: missing-fields
-      topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
-      changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
-    },
-  }
 
   -- Useful plugin to show you pending keybinds.
   vim.pack.add { gh 'folke/which-key.nvim' }
@@ -373,25 +370,6 @@ do
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
   }
-
-  -- [[ Colorscheme ]]
-  -- You can easily change to a different colorscheme.
-  -- Change the name of the colorscheme plugin below, and then
-  -- change the command under that to load whatever the name of that colorscheme is.
-  --
-  -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
-  ---@diagnostic disable-next-line: missing-fields
-  require('tokyonight').setup {
-    styles = {
-      comments = { italic = false }, -- Disable italics in comments
-    },
-  }
-
-  -- Load the colorscheme here.
-  -- Like many other themes, this one has different styles, and you could load
-  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-night'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
@@ -435,9 +413,7 @@ do
   --  and try some other statusline plugin
   local statusline = require 'mini.statusline'
 
-  local function set_unsaved_hl()
-    vim.api.nvim_set_hl(0, 'StatuslineUnsaved', { fg = '#ffffff', bg = '#cc3333', bold = true })
-  end
+  local function set_unsaved_hl() vim.api.nvim_set_hl(0, 'StatuslineUnsaved', { fg = '#ffffff', bg = '#cc3333', bold = true }) end
   set_unsaved_hl()
   vim.api.nvim_create_autocmd('ColorScheme', { callback = set_unsaved_hl })
 
@@ -455,28 +431,28 @@ do
     content = {
       active = function()
         local mode, mode_hl = statusline.section_mode { trunc_width = 120 }
-        local git           = statusline.section_git { trunc_width = 75 }
-        local diff          = statusline.section_diff { trunc_width = 75 }
-        local diagnostics   = statusline.section_diagnostics { trunc_width = 75 }
-        local lsp           = statusline.section_lsp { trunc_width = 75 }
-        local filename      = statusline.section_filename { trunc_width = 140 }
-        local fileinfo      = statusline.section_fileinfo { trunc_width = 120 }
-        local location      = statusline.section_location { trunc_width = 75 }
-        local search        = statusline.section_searchcount { trunc_width = 75 }
+        local git = statusline.section_git { trunc_width = 75 }
+        local diff = statusline.section_diff { trunc_width = 75 }
+        local diagnostics = statusline.section_diagnostics { trunc_width = 75 }
+        local lsp = statusline.section_lsp { trunc_width = 75 }
+        local filename = statusline.section_filename { trunc_width = 140 }
+        local fileinfo = statusline.section_fileinfo { trunc_width = 120 }
+        local location = statusline.section_location { trunc_width = 75 }
+        local search = statusline.section_searchcount { trunc_width = 75 }
 
         local n = unsaved_count()
         local badge = n > 0 and (pencil .. ' ' .. n) or ''
 
         return statusline.combine_groups {
-          { hl = 'StatuslineUnsaved',      strings = { badge } },
-          { hl = mode_hl,                  strings = { mode } },
-          { hl = 'MiniStatuslineDevinfo',  strings = { git, diff, diagnostics, lsp } },
+          { hl = 'StatuslineUnsaved', strings = { badge } },
+          { hl = mode_hl, strings = { mode } },
+          { hl = 'MiniStatuslineDevinfo', strings = { git, diff, diagnostics, lsp } },
           '%<',
           { hl = 'MiniStatuslineFilename', strings = { filename } },
           '%=',
           { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
-          { hl = mode_hl,                  strings = { search, location } },
-          { hl = 'StatuslineUnsaved',      strings = { badge } },
+          { hl = mode_hl, strings = { search, location } },
+          { hl = 'StatuslineUnsaved', strings = { badge } },
         }
       end,
     },
@@ -761,8 +737,6 @@ do
     -- ts_ls = {},
     vtsls = {},
 
-    stylua = {}, -- Used to format Lua code
-
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
       on_init = function(client)
@@ -817,7 +791,8 @@ do
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
+    'stylua', -- Lua formatter (not an LSP, so listed here instead of servers)
+    'eslint_d', -- JS/TS formatter used by conform.nvim
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -845,6 +820,7 @@ do
       lsp_format = 'fallback',
     },
     formatters_by_ft = {
+      lua = { 'stylua' },
       javascript = { 'eslint_d' },
       typescript = { 'eslint_d' },
       javascriptreact = { 'eslint_d' },
@@ -909,6 +885,45 @@ do
       -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
       -- Adjusts spacing to ensure icons are aligned
       nerd_font_variant = 'mono',
+      kind_icons = {
+        Array = ' ',
+        Boolean = '󰨙 ',
+        Class = ' ',
+        Color = ' ',
+        Control = ' ',
+        Collapsed = ' ',
+        Constant = '󰏿 ',
+        Constructor = ' ',
+        Copilot = ' ',
+        Enum = ' ',
+        EnumMember = ' ',
+        Event = ' ',
+        Field = ' ',
+        File = ' ',
+        Folder = ' ',
+        Function = '󰊕 ',
+        Interface = ' ',
+        Key = ' ',
+        Keyword = ' ',
+        Method = '󰊕 ',
+        Module = ' ',
+        Namespace = '󰦮 ',
+        Null = ' ',
+        Number = '󰎠 ',
+        Object = ' ',
+        Operator = ' ',
+        Package = ' ',
+        Property = ' ',
+        Reference = ' ',
+        Snippet = '󱄽 ',
+        String = ' ',
+        Struct = '󰆼 ',
+        Text = ' ',
+        TypeParameter = ' ',
+        Unit = ' ',
+        Value = ' ',
+        Variable = '󰀫 ',
+      },
     },
 
     completion = {

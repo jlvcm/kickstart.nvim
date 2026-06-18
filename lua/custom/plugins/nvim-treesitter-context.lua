@@ -15,8 +15,8 @@ if ok_mv then
   vim.keymap.set('n', '[F', jump(ts_move.goto_previous_end, '@function.outer'), { desc = 'Prev function end' })
   vim.keymap.set('n', ']a', jump(ts_move.goto_next_start, '@parameter.inner'), { desc = 'Next parameter' })
   vim.keymap.set('n', '[a', jump(ts_move.goto_previous_start, '@parameter.inner'), { desc = 'Prev parameter' })
-  vim.keymap.set('n', ']c', jump(ts_move.goto_next_start, '@class.outer'), { desc = 'Next class' })
-  vim.keymap.set('n', '[c', jump(ts_move.goto_previous_start, '@class.outer'), { desc = 'Prev class' })
+  vim.keymap.set('n', ']C', jump(ts_move.goto_next_start, '@class.outer'), { desc = 'Next class' })
+  vim.keymap.set('n', '[C', jump(ts_move.goto_previous_start, '@class.outer'), { desc = 'Prev class' })
 end
 
 -- Select (visual / operator-pending)
