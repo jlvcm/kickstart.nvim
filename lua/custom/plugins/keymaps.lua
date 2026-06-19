@@ -5,30 +5,8 @@ vim.keymap.set('n', '[e', function() vim.diagnostic.jump { count = -1, severity 
 vim.keymap.set('n', ']w', function() vim.diagnostic.jump { count = 1, severity = vim.diagnostic.severity.WARN } end, { desc = 'Next warning' })
 vim.keymap.set('n', '[w', function() vim.diagnostic.jump { count = -1, severity = vim.diagnostic.severity.WARN } end, { desc = 'Prev warning' })
 
-local function open_lazygit()
-  local width = math.floor(vim.o.columns * 0.9)
-  local height = math.floor(vim.o.lines * 0.9)
-  local buf = vim.api.nvim_create_buf(false, true)
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = 'editor',
-    width = width,
-    height = height,
-    col = math.floor((vim.o.columns - width) / 2),
-    row = math.floor((vim.o.lines - height) / 2),
-    style = 'minimal',
-    border = 'rounded',
-  })
-  vim.fn.termopen('lazygit', {
-    on_exit = function()
-      if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
-      if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_delete(buf, { force = true }) end
-    end,
-  })
-  vim.cmd 'startinsert'
-end
-
-vim.keymap.set('n', '<leader>gg', open_lazygit, { desc = 'Open Lazygit' })
-vim.keymap.set('n', '<leader>gs', function() require('telescope.builtin').git_status() end, { desc = 'Git status (changed files)' })
+vim.keymap.set('n', '<leader>gg', function() Snacks.lazygit() end,            { desc = 'Open Lazygit' })
+vim.keymap.set('n', '<leader>gs', function() Snacks.picker.git_status() end, { desc = 'Git status (changed files)' })
 
 vim.keymap.set('n', '<leader>qq', '<cmd>qa<cr>', { desc = 'Quit all' })
 
